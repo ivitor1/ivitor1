@@ -1,6 +1,6 @@
 # Hi 👋, I'm Vitor Santos
 
-🚀 **Junior Software Engineer | Java, JavaScript & Phyton**  
+**Junior Software Engineer | Java, JavaScript & Phyton**  
 🇧🇷 Brazilp
 
 🚀Back-End Developer in continuous training, on my way to a postgraduate degree in Software Engineering. After graduating in Foreign Trade, I decided to migrate to the tech field and today I am building my career creating APIs, automations, and systems that solve real-world problems.
