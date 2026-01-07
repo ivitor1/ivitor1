@@ -22,13 +22,17 @@
 
 ## 🧠 What I do
 
--   🏗️ SaaS & High-scale systems
--   ⚡ Performance optimization
--   🧩 Clean architecture & system design
--   🔐 Secure APIs & authentication
--   💳 Payments, subscriptions & business logic
--   🤖 Automation & integrations
--   📊 Dashboards & analytics
+🏗️ Back-End Development (mainly Python and Java) — in progress
+⚙️ Building and consuming REST APIs — beginner/intermediate level
+🤖 Task automation (spreadsheets, emails, reports and simple integrations)
+📊 Data manipulation in Excel and Google Sheets focused on automation
+🔗 Integration with third-party APIs and external services
+🧠 Development of small bots and productivity assistants
+🧩 Learning Clean Architecture and coding best practices
+🔐 Basic knowledge of authentication and token-based APIs
+🗄️ Foundations of SQL databases and basic queries
+📈 Creation of simple dashboards and reports for data analysis
+🚀 Continuous learning focused on back-end and automation
 
 ---
 
