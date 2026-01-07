@@ -3,10 +3,7 @@
 🚀 **Junior Software Engineer | Java, JavaScript & Phyton**  
 🇧🇷 Brazilp
 
-I build **scalable products**, **SaaS platforms**, and **high-performance web systems**.  
-I’m deeply focused on **architecture, performance, clean code, and business-driven solutions**.
-
-I also create content and share knowledge on **software development, SaaS, and tech entrepreneurship**.
+🚀Back-End Developer in continuous training, on my way to a postgraduate degree in Software Engineering. After graduating in Foreign Trade, I decided to migrate to the tech field and today I am building my career creating APIs, automations, and systems that solve real-world problems.
 
 ---
 
