@@ -79,8 +79,8 @@
 
 ## 🚀 Philosophy
 
-> _"Code is not just about solving problems.  
-> It's about building solutions that scale, last, and generate real value."_
+> _"Code is not just written  
+> it frees people from repetitive work and turns ideas into automated solutions that actually help."_
 
 ---
 
