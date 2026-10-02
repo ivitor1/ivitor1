@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Activity, Utensils, Scale, Plus, Flame } from 'lucide-react';
+import { Activity, Utensils, Scale, Plus, Flame, Loader2, AlertCircle } from 'lucide-react';
 
 export const Route = createFileRoute('/')({
   component: DashboardComponent,
@@ -38,6 +38,7 @@ function DashboardComponent() {
   const [foodLogs, setFoodLogs] = useState<FoodLogItem[]>([]);
   const [bodyMetrics, setBodyMetrics] = useState<BodyMetricItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const [actKind, setActKind] = useState('corrida');
   const [actDistance, setActDistance] = useState('');
@@ -50,35 +51,44 @@ function DashboardComponent() {
   const [weightKg, setWeightKg] = useState('');
 
   useEffect(() => {
-    fetchDashboardData();
+    void fetchDashboardData();
   }, []);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const { data: actData } = await supabase
-        .from('activities')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      const [actRes, foodRes, bodyRes] = await Promise.all([
+        supabase
+          .from('activities')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('food_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5),
+        supabase
+          .from('body_metrics')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5),
+      ]);
 
-      const { data: foodData } = await supabase
-        .from('food_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      if (actRes.data) setActivities(actRes.data as ActivityItem[]);
+      if (foodRes.data) setFoodLogs(foodRes.data as FoodLogItem[]);
+      if (bodyRes.data) setBodyMetrics(bodyRes.data as BodyMetricItem[]);
 
-      const { data: bodyData } = await supabase
-        .from('body_metrics')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (actData) setActivities(actData);
-      if (foodData) setFoodLogs(foodData);
-      if (bodyData) setBodyMetrics(bodyData);
+      if (actRes.error || foodRes.error || bodyRes.error) {
+        setNotice(
+          'Não foi possível carregar seu histórico agora. Você ainda pode registrar novas informações nos formulários abaixo.',
+        );
+      }
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
+      setNotice(
+        'Não foi possível carregar seu histórico agora. Você ainda pode registrar novas informações nos formulários abaixo.',
+      );
     } finally {
       setLoading(false);
     }
@@ -96,11 +106,15 @@ function DashboardComponent() {
       },
     ]);
 
-    if (!error) {
-      setActDistance('');
-      setActDuration('');
-      fetchDashboardData();
+    if (error) {
+      setNotice('Não deu para salvar a atividade: ' + error.message);
+      return;
     }
+
+    setNotice(null);
+    setActDistance('');
+    setActDuration('');
+    void fetchDashboardData();
   };
 
   const handleAddFood = async (e: React.FormEvent) => {
@@ -115,11 +129,15 @@ function DashboardComponent() {
       },
     ]);
 
-    if (!error) {
-      setFoodName('');
-      setFoodCalories('');
-      fetchDashboardData();
+    if (error) {
+      setNotice('Não deu para salvar a refeição: ' + error.message);
+      return;
     }
+
+    setNotice(null);
+    setFoodName('');
+    setFoodCalories('');
+    void fetchDashboardData();
   };
 
   const handleAddWeight = async (e: React.FormEvent) => {
@@ -132,10 +150,14 @@ function DashboardComponent() {
       },
     ]);
 
-    if (!error) {
-      setWeightKg('');
-      fetchDashboardData();
+    if (error) {
+      setNotice('Não deu para salvar o peso: ' + error.message);
+      return;
     }
+
+    setNotice(null);
+    setWeightKg('');
+    void fetchDashboardData();
   };
 
   const totalCalories = foodLogs.reduce((acc, curr) => acc + (Number(curr.calories) || 0), 0);
@@ -144,6 +166,13 @@ function DashboardComponent() {
 
   return (
     <div className="space-y-6">
+      {notice && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <p>{notice}</p>
+        </div>
+      )}
+
       <div className="rounded-2xl bg-gradient-to-r from-emerald-900/50 via-slate-900 to-slate-900 border border-emerald-500/20 p-6 sm:p-8 relative overflow-hidden shadow-xl">
         <div className="relative z-10 space-y-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -165,7 +194,16 @@ function DashboardComponent() {
           </div>
           <div>
             <p className="text-xs text-slate-400 font-medium">Distância Percorrida</p>
-            <p className="text-2xl font-bold text-white">{totalDistance.toFixed(1)} <span className="text-xs text-slate-400 font-normal">km</span></p>
+            {loading ? (
+              <p className="text-sm text-slate-400 flex items-center gap-1.5 mt-1">
+                <Loader2 className="w-4 h-4 animate-spin" /> Carregando...
+              </p>
+            ) : (
+              <p className="text-2xl font-bold text-white">
+                {totalDistance.toFixed(1)}{' '}
+                <span className="text-xs text-slate-400 font-normal">km</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -175,7 +213,16 @@ function DashboardComponent() {
           </div>
           <div>
             <p className="text-xs text-slate-400 font-medium">Calorias Registradas</p>
-            <p className="text-2xl font-bold text-white">{totalCalories} <span className="text-xs text-slate-400 font-normal">kcal</span></p>
+            {loading ? (
+              <p className="text-sm text-slate-400 flex items-center gap-1.5 mt-1">
+                <Loader2 className="w-4 h-4 animate-spin" /> Carregando...
+              </p>
+            ) : (
+              <p className="text-2xl font-bold text-white">
+                {totalCalories}{' '}
+                <span className="text-xs text-slate-400 font-normal">kcal</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -185,7 +232,16 @@ function DashboardComponent() {
           </div>
           <div>
             <p className="text-xs text-slate-400 font-medium">Último Peso</p>
-            <p className="text-2xl font-bold text-white">{latestWeight} <span className="text-xs text-slate-400 font-normal">kg</span></p>
+            {loading ? (
+              <p className="text-sm text-slate-400 flex items-center gap-1.5 mt-1">
+                <Loader2 className="w-4 h-4 animate-spin" /> Carregando...
+              </p>
+            ) : (
+              <p className="text-2xl font-bold text-white">
+                {latestWeight}{' '}
+                <span className="text-xs text-slate-400 font-normal">kg</span>
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -243,15 +299,26 @@ function DashboardComponent() {
           </form>
 
           <div className="flex-1 space-y-2 pt-2 border-t border-slate-800/60">
-            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Histórico Recente</h4>
-            {activities.length === 0 ? (
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Histórico Recente
+            </h4>
+            {loading ? (
+              <p className="text-xs text-slate-500 py-2 flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Carregando registros...
+              </p>
+            ) : activities.length === 0 ? (
               <p className="text-xs text-slate-500 py-2">Nenhuma atividade registrada.</p>
             ) : (
               activities.map((item) => (
-                <div key={item.id} className="bg-slate-950 p-3 rounded-lg flex justify-between items-center text-xs">
+                <div
+                  key={item.id}
+                  className="bg-slate-950 p-3 rounded-lg flex justify-between items-center text-xs"
+                >
                   <div>
                     <p className="font-semibold text-slate-200 capitalize">{item.kind}</p>
-                    <p className="text-slate-500">{new Date(item.created_at).toLocaleDateString('pt-BR')}</p>
+                    <p className="text-slate-500">
+                      {new Date(item.created_at).toLocaleDateString('pt-BR')}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-emerald-400">{item.distance_km} km</p>
@@ -312,12 +379,21 @@ function DashboardComponent() {
           </form>
 
           <div className="flex-1 space-y-2 pt-2 border-t border-slate-800/60">
-            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Histórico Recente</h4>
-            {foodLogs.length === 0 ? (
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Histórico Recente
+            </h4>
+            {loading ? (
+              <p className="text-xs text-slate-500 py-2 flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Carregando registros...
+              </p>
+            ) : foodLogs.length === 0 ? (
               <p className="text-xs text-slate-500 py-2">Nenhuma refeição registrada.</p>
             ) : (
               foodLogs.map((item) => (
-                <div key={item.id} className="bg-slate-950 p-3 rounded-lg flex justify-between items-center text-xs">
+                <div
+                  key={item.id}
+                  className="bg-slate-950 p-3 rounded-lg flex justify-between items-center text-xs"
+                >
                   <div>
                     <p className="font-semibold text-slate-200">{item.name}</p>
                     <p className="text-slate-500">{item.meal}</p>
@@ -358,15 +434,26 @@ function DashboardComponent() {
           </form>
 
           <div className="flex-1 space-y-2 pt-2 border-t border-slate-800/60">
-            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Histórico Recente</h4>
-            {bodyMetrics.length === 0 ? (
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Histórico Recente
+            </h4>
+            {loading ? (
+              <p className="text-xs text-slate-500 py-2 flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Carregando registros...
+              </p>
+            ) : bodyMetrics.length === 0 ? (
               <p className="text-xs text-slate-500 py-2">Nenhuma medição registrada.</p>
             ) : (
               bodyMetrics.map((item) => (
-                <div key={item.id} className="bg-slate-950 p-3 rounded-lg flex justify-between items-center text-xs">
+                <div
+                  key={item.id}
+                  className="bg-slate-950 p-3 rounded-lg flex justify-between items-center text-xs"
+                >
                   <div>
                     <p className="font-semibold text-slate-200">Peso Corporal</p>
-                    <p className="text-slate-500">{new Date(item.created_at).toLocaleDateString('pt-BR')}</p>
+                    <p className="text-slate-500">
+                      {new Date(item.created_at).toLocaleDateString('pt-BR')}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-blue-400">{item.weight_kg} kg</p>
